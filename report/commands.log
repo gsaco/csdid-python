@@ -1,0 +1,2 @@
+Rscript scripts/run_reference_truth.R
+python scripts/run_python_equiv.py

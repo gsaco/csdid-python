@@ -1,0 +1,48 @@
+R version 4.5.1 (2025-06-13)
+Platform: aarch64-apple-darwin24.4.0
+Running under: macOS Sequoia 15.6.1
+
+Matrix products: default
+BLAS:   /opt/homebrew/Cellar/openblas/0.3.30/lib/libopenblasp-r0.3.30.dylib 
+LAPACK: /opt/homebrew/Cellar/r/4.5.1/lib/R/lib/libRlapack.dylib;  LAPACK version 3.12.1
+
+locale:
+[1] C
+
+time zone: America/Lima
+tzcode source: internal
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] broom_1.0.10    did_2.2.1.913   lubridate_1.9.4 forcats_1.0.0  
+ [5] stringr_1.6.0   dplyr_1.1.4     purrr_1.2.0     readr_2.1.5    
+ [9] tidyr_1.3.1     tibble_3.3.0    ggplot2_4.0.1   tidyverse_2.0.0
+
+loaded via a namespace (and not attached):
+ [1] tidyselect_1.2.1     timeDate_4051.111    farver_2.1.2        
+ [4] S7_0.2.1             pROC_1.19.0.1        caret_7.0-1         
+ [7] digest_0.6.39        rpart_4.1.24         DRDID_1.2.2         
+[10] timechange_0.3.0     parglm_0.1.7         lifecycle_1.0.4     
+[13] dreamerr_1.5.0       survival_3.8-3       magrittr_2.0.4      
+[16] compiler_4.5.1       rlang_1.1.6          tools_4.5.1         
+[19] data.table_1.17.8    bit_4.6.0            plyr_1.8.9          
+[22] RColorBrewer_1.1-3   withr_3.0.2          nnet_7.3-20         
+[25] grid_4.5.1           stats4_4.5.1         future_1.68.0       
+[28] BMisc_1.4.8          globals_0.18.0       scales_1.4.0        
+[31] iterators_1.0.14     MASS_7.3-65          cli_3.6.5           
+[34] crayon_1.5.3         generics_0.1.4       future.apply_1.20.0 
+[37] bigmemory.sri_0.1.8  reshape2_1.4.5       tzdb_0.5.0          
+[40] splines_4.5.1        parallel_4.5.1       fastglm_0.0.3       
+[43] stringmagic_1.2.0    vctrs_0.6.5          hardhat_1.4.2       
+[46] Matrix_1.7-3         hms_1.1.3            bit64_4.6.0-1       
+[49] Formula_1.2-5        listenv_0.10.0       foreach_1.5.2       
+[52] trust_0.1-8          gower_1.0.2          recipes_1.3.1       
+[55] glue_1.8.0           bigmemory_4.6.4      parallelly_1.45.1   
+[58] codetools_0.2-20     stringi_1.8.7        gtable_0.3.6        
+[61] pillar_1.11.1        ipred_0.9-15         lava_1.8.2          
+[64] R6_2.6.1             vroom_1.6.6          lattice_0.22-7      
+[67] backports_1.5.0      class_7.3-23         Rcpp_1.1.0          
+[70] uuid_1.2-1           nlme_3.1-168         prodlim_2025.04.28  
+[73] ModelMetrics_1.2.2.2 pkgconfig_2.0.3     

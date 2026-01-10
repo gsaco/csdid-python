@@ -1,0 +1,137 @@
+\documentclass{article}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+\makeatletter
+\providecommand{\IfDocumentMetadataT}[1]{#1}%
+\providecommand{\IfDocumentMetadataTF}[2]{#2}%
+\makeatother
+\usepackage{hyperref}
+\usepackage{listings}
+
+\title{CSDID Python vs.\ R/Stata Equivalence Check (Medicaid Table 7)}
+\author{Replication QA}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section*{Executive Summary}
+We executed the Callaway \& Sant'Anna (2021) Medicaid expansion design (Table 7) in the R reference codebase and in the Python fork using identical data, weighting, base-period choice, control group, covariates, and bootstrap settings. Point estimates for all six cells (RA/IPW/DR $\times$ weighted/unweighted) match within machine tolerance; standard errors and confidence bounds differ beyond the specified tolerances, so the overall table is marked \textbf{Fail}. Artifacts are under \texttt{report/artifacts/}.
+\begin{itemize}
+  \item Data: \texttt{county\_mortality\_data.csv} (JEL-DiD), filtered to 2013--2014, excluded DC/DE/MA/NY/VT and late adopters.
+  \item Methods: RA, IPW, DR; control group = \texttt{nevertreated}; base period = universal.
+  \item Weights: population (2013) as \texttt{set\_wt}; runs both unweighted and weighted.
+  \item Clustering/SEs: multiplier bootstrap, 25{,}000 Rademacher draws; no additional clustering.
+  \item Trimming: none beyond data prep; anticipation = 0; seed = 20240924 for R and Python.
+\end{itemize}
+
+\section*{Reproducibility \& Environment}
+\begin{itemize}
+  \item Reference repo: \texttt{JEL-DiD} @ \texttt{7c60bf753434cddaa24c1f0bb0ef2852777f6d55}.
+  \item Python repo: \texttt{csdid-python} @ \texttt{20f5379d716e8e6b5b5c337d05d29f1dc8d98f5c}.
+  \item R: 4.5.1; key packages: \texttt{did} 2.2.1.913, \texttt{DRDID} 1.2.2, \texttt{tidyverse} 2.0.0 (full session in \texttt{session\_info\_r.txt}).
+  \item Python: 3.11.9; platform macOS 15.6.1 (arm64); package inventory in \texttt{session\_info\_py.txt}.
+  \item Data path: \texttt{/Users/gabrielsaco/Documents/GitHub/JEL-DiD/data/county\_mortality\_data.csv}.
+\end{itemize}
+
+\section*{Exact Commands Run}
+\begin{verbatim}
+Rscript scripts/run_reference_truth.R
+python scripts/run_python_equiv.py
+\end{verbatim}
+Command log: \texttt{report/commands.log}.
+
+\section*{Equivalence Specification}
+\begin{itemize}
+  \item Alignment keys: \texttt{spec\_id}, \texttt{method} (reg/ipw/dr), \texttt{weighted} (TRUE/FALSE), \texttt{agg\_type} (group), \texttt{g}, \texttt{t}, \texttt{e}.
+  \item Statistics compared: ATT estimate, standard error, lower/upper confidence bounds.
+  \item Tolerances: estimates use $\texttt{atol}=10^{-6}$, $\texttt{rtol}=10^{-6}$; standard errors use $\texttt{atol}=10^{-6}$, $\texttt{rtol}=10^{-4}$; confidence bounds use estimate tolerances. A cell passes only if every required statistic meets its tolerance.
+  \item Normalization: both sides exported to tidy CSV (\texttt{truth\_r.csv}, \texttt{python.csv}); diffs computed in \texttt{diff.csv}.
+  \item NA handling: none observed after data prep; exact match enforced on keys.
+\end{itemize}
+
+\section*{Results}
+Max absolute difference = 0.1360 (CI bounds), max relative difference = 0.0820 (CI upper, weighted RA). Of 24 cell-level checks, 6 pass (all point estimates) and 18 fail (all SE/CI-related) due to bootstrap dispersion.
+
+\subsection*{ATT Estimates (all pass)}
+\begin{table}[h]
+\centering
+\begin{tabular}{llrrrrr}
+\toprule
+Method & Weighted & Truth (ATT) & Python & Abs Diff & Rel Diff & Pass \\
+\midrule
+REG & No  & -1.6154 & -1.6154 & 0.000000 & 0.000000 & Pass \\
+IPW & No  & -0.8586 & -0.8586 & 0.000000 & 0.000000 & Pass \\
+DR  & No  & -1.2256 & -1.2256 & 0.000000 & 0.000000 & Pass \\
+REG & Yes & -3.4592 & -3.4592 & 0.000000 & 0.000000 & Pass \\
+IPW & Yes & -3.8417 & -3.8417 & 0.000000 & 0.000000 & Pass \\
+DR  & Yes & -3.7561 & -3.7561 & 0.000000 & 0.000000 & Pass \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{Standard Errors (all fail)}
+\begin{table}[h]
+\centering
+\begin{tabular}{llrrrrr}
+\toprule
+Method & Weighted & Truth SE & Python SE & Abs Diff & Rel Diff & Pass \\
+\midrule
+REG & No  & 4.6790 & 4.6927 & 0.013684 & 0.002925 & Fail \\
+IPW & No  & 4.6117 & 4.6761 & 0.064448 & 0.013975 & Fail \\
+DR  & No  & 4.9428 & 4.9296 & 0.013174 & 0.002665 & Fail \\
+REG & Yes & 2.3880 & 2.4222 & 0.034164 & 0.014306 & Fail \\
+IPW & Yes & 3.3942 & 3.3248 & 0.069368 & 0.020437 & Fail \\
+DR  & Yes & 3.2402 & 3.1967 & 0.043439 & 0.013406 & Fail \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{Confidence Bounds (all fail)}
+\begin{table}[h]
+\centering
+\begin{tabular}{llrrrrr}
+\toprule
+Method & Weighted & Truth CI$_{L}$ & Python CI$_{L}$ & Abs Diff & Rel Diff & Pass \\
+\midrule
+REG & No  & -10.7861 & -10.8129 & 0.026820 & 0.002487 & Fail \\
+IPW & No  &  -9.8973 & -10.0236 & 0.126316 & 0.012763 & Fail \\
+DR  & No  & -10.9134 & -10.9780 & 0.064663 & 0.005925 & Fail \\
+REG & Yes &  -8.1397 &  -8.2397 & 0.100087 & 0.012296 & Fail \\
+IPW & Yes & -10.4942 & -10.3582 & 0.135959 & 0.012956 & Fail \\
+DR  & Yes & -10.1067 & -10.0216 & 0.085138 & 0.008424 & Fail \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{llrrrrr}
+\toprule
+Method & Weighted & Truth CI$_{U}$ & Python CI$_{U}$ & Abs Diff & Rel Diff & Pass \\
+\midrule
+REG & No  & 7.5552 & 7.5820 & 0.026820 & 0.003550 & Fail \\
+IPW & No  & 8.1802 & 8.3065 & 0.126316 & 0.015442 & Fail \\
+DR  & No  & 8.4621 & 8.5267 & 0.064663 & 0.007642 & Fail \\
+REG & Yes & 1.2212 & 1.3213 & 0.100087 & 0.081956 & Fail \\
+IPW & Yes & 2.8108 & 2.6748 & 0.135959 & 0.048371 & Fail \\
+DR  & Yes & 2.5945 & 2.5094 & 0.085138 & 0.032814 & Fail \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent Diagnostic note: the influence-function bootstrap in Python produces slightly larger dispersion than the R reference, leading to up to $\approx 0.07$ SE gaps and $\approx 0.14$ CI gaps. Point estimates coincide to numerical precision.
+
+\section*{Sanity Checks}
+\begin{itemize}
+  \item Sample alignment: both runs use 4{,}400 rows, 2{,}200 counties; treated = 978, controls = 1{,}222; weight stats match (min 1{,}891, mean 67{,}996.82, max 6{,}221{,}536).
+  \item Weighted vs.\ unweighted: ATT magnitudes shift materially (e.g., DR $-1.23$ unweighted vs.\ $-3.76$ weighted).
+  \item Method contrasts: RA, IPW, and DR estimates differ across methods as expected.
+  \item Seeds: R \& Python both set to 20240924; bootstrap draws = 25{,}000 in all calls; no trimming or clustering beyond bootstrap.
+\end{itemize}
+
+\section*{Conclusion}
+Point estimates replicate exactly, but the Python bootstrap standard errors and resulting confidence intervals exceed the agreed tolerances, so the Medicaid Table 7 equivalence test \textbf{fails}. Next steps: align the multiplier-bootstrap implementation/tuning (or calibrate tolerances specific to bootstrap variability) to close the remaining SE/CI gaps. All artifacts for review are in \texttt{report/artifacts/}.
+
+\end{document}

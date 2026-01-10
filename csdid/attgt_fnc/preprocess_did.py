@@ -259,7 +259,10 @@ def pre_process_did(yname, tname, idname, gname, data: pd.DataFrame,
   ) -> dict:
 
   n, t = data.shape
-  control_group = control_group[0]
+  if isinstance(control_group, (list, tuple, np.ndarray)):
+    control_group = control_group[0]
+  if control_group not in ["nevertreated", "notyettreated"]:
+    raise ValueError("control_group must be either 'nevertreated' or 'notyettreated'")
   columns = [idname, tname, yname, gname]
   # print(columns)
   # Columns
@@ -271,9 +274,15 @@ def pre_process_did(yname, tname, idname, gname, data: pd.DataFrame,
   else:
     w = np.ones(n)
 
-
   if xformla is None:
     xformla = f'{yname} ~ 1'
+  else:
+    if isinstance(xformla, str):
+      xformla = xformla.strip()
+      if "~" not in xformla:
+        xformla = f"{yname} ~ {xformla}"
+      elif xformla.startswith("~"):
+        xformla = f"{yname} {xformla}"
 
   # if xformla is None:
   try:
@@ -281,10 +290,13 @@ def pre_process_did(yname, tname, idname, gname, data: pd.DataFrame,
     _, n_cov = x_cov.shape
     data = pd.concat([data[columns], x_cov], axis=1)
     data = data.assign(w = w)
-  except:
+  except Exception:
+    y_str, x_str = xformla.split("~")
+    xs1 = x_str.split('+')
+    xs1_col_names = [x.strip() for x in xs1 if x.strip() not in ["", "1"]]
     data = data.assign(intercept = 1)
-    clms = columns + ['intercept']
-    n_cov = len(data.columns)
+    clms = columns + xs1_col_names + ['intercept']
+    n_cov = len(xs1_col_names) + 1
     # patsy dont work with pyspark
     data = data[clms]
     if weights_name is None:
@@ -356,14 +368,13 @@ def pre_process_did(yname, tname, idname, gname, data: pd.DataFrame,
       panel = False
       true_rep_cross_section = False
     else:
-      keepers = data.dropna().index
-      n = len(data[idname].unique)
-      print(n)
-      n_keep = len(data.iloc[keepers, idname].unique())
+      keepers = data.notna().all(axis=1)
+      n = data[idname].nunique()
+      n_keep = data.loc[keepers, idname].nunique()
 
-      if len(data.loc[keepers] < len(data)):
-        print(f"Dropped {n-n_keep} observations that had missing data.")
-        data = data.loc[keepers]
+      if keepers.sum() < len(data):
+        warnings.warn(f"Dropped {n - n_keep} observations that had missing data.")
+        data = data.loc[keepers].copy()
       # make balanced data set
       n_old = len(data[idname].unique())
       data = makeBalancedPanel(data, idname=idname, tname=tname)

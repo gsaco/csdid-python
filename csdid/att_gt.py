@@ -25,7 +25,7 @@ class ATTgt:
     dp = pre_process_did(
       yname=yname, tname = tname, idname=idname, gname = gname,
       data = data, control_group=control_group, anticipation=anticipation,
-      xformla=xformla, panel=panel, allow_unbalanced_panel=allow_unbalanced_panel, cband=cband, clustervar=None, weights_name=None
+      xformla=xformla, panel=panel, allow_unbalanced_panel=allow_unbalanced_panel, cband=cband, clustervar=clustervar, weights_name=weights_name
     )
 
     dp['biters'] = biters

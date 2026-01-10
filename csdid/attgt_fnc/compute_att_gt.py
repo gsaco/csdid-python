@@ -1,6 +1,14 @@
 import numpy as np, pandas as pd
-import patsy 
-from drdid import drdid, reg_did, ipwd_did
+import patsy
+
+from csdid.attgt_fnc.estimators import (
+    drdid_panel,
+    drdid_rc,
+    reg_did_panel,
+    reg_did_rc,
+    std_ipw_did_panel,
+    std_ipw_did_rc,
+)
 
 from csdid.utils.bmisc import panel2cs2
 import warnings
@@ -23,7 +31,7 @@ def compute_att_gt(dp, est_method = "dr", base_period = 'varying'):
     control_group = dp['control_group']
     anticipation = dp['anticipation']
     gname = dp['gname']
-    n = dp['n']
+    n_obs = dp['n']
     nT = dp['nT']
     nG = dp['nG']
     tlist = dp['tlist']
@@ -76,9 +84,9 @@ def compute_att_gt(dp, est_method = "dr", base_period = 'varying'):
                     )
 
             # If we are in the universal base period
-            if base_period == 'universal' and pret == tn:
+            if base_period == 'universal' and tlist[pret] == tn:
                 # Normalize results to zero and skip computation
-                add_att_data(att=0, pst=0, inf_f=np.zeros(len(data)))
+                add_att_data(att=0, pst=0, inf_f=np.zeros(n_obs))
                 continue
 
             # For non-never treated groups, set up the control group indicator 'C'
@@ -112,12 +120,6 @@ def compute_att_gt(dp, est_method = "dr", base_period = 'varying'):
             # print(f"Set pretreatment period to be: {tlist[pret]}")
 
             # -----------------------------------------------------------------------------
-            # Debugging and validation
-            if base_period == 'universal' and pret == tn:
-                # Normalize results to zero and break the loop
-                add_att_data(att=0, pst=post_treat, inf_f=np.zeros(len(data)))
-                continue
-            
             # Post-treatment dummy variable
             post_treat = 1 * (g <= tn)
 
@@ -131,7 +133,7 @@ def compute_att_gt(dp, est_method = "dr", base_period = 'varying'):
             if panel: 
                 disdat = panel2cs2(disdat, yname, idname, tname)
                 disdat = disdat.dropna()
-                n = len(disdat)
+                n_dis = len(disdat)
                 dis_idx = np.array(disdat.G_m == 1) | np.array(disdat.C == 1)
                 disdat = disdat.loc[dis_idx, :]
                 n1 = len(disdat)
@@ -149,16 +151,16 @@ def compute_att_gt(dp, est_method = "dr", base_period = 'varying'):
                 if callable(est_method):
                     est_att_f = est_method
                 elif est_method == "reg":
-                    est_att_f = reg_did.reg_did_panel
+                    est_att_f = reg_did_panel
                 elif est_method == "ipw":
-                    est_att_f = ipwd_did.std_ipw_did_panel
+                    est_att_f = std_ipw_did_panel
                 elif est_method == "dr":
-                    est_att_f = drdid.drdid_panel
+                    est_att_f = drdid_panel
 
                 att_gt, att_inf_func = est_att_f(ypost, ypre, G, i_weights=w, covariates=covariates)
 
-                inf_zeros = np.zeros(n)
-                att_inf = n / n1 * att_inf_func
+                inf_zeros = np.zeros(n_obs)
+                att_inf = n_dis / n1 * att_inf_func
                 inf_zeros[dis_idx] = att_inf
 
                 add_att_data(att_gt, inf_f=inf_zeros)
@@ -219,7 +221,7 @@ def compute_att_gt(dp, est_method = "dr", base_period = 'varying'):
 
                 if skip_this_att_gt:
                     # Append results with missing ATT and NA influence function
-                    add_att_data(att=np.nan, pst=post_treat, inf_f=np.full(n, np.nan))
+                    add_att_data(att=np.nan, pst=post_treat, inf_f=np.full(n_obs, np.nan))
                     #add_att_data()
                     continue
 
@@ -248,15 +250,15 @@ def compute_att_gt(dp, est_method = "dr", base_period = 'varying'):
                 if callable(est_method):
                     est_att_f = est_method
                 elif est_method == "reg":
-                    est_att_f = reg_did.reg_did_rc
+                    est_att_f = reg_did_rc
                 elif est_method == "ipw":
-                    est_att_f = ipwd_did.std_ipw_did_rc
+                    est_att_f = std_ipw_did_rc
                 elif est_method == "dr":
-                    est_att_f = drdid.drdid_rc
+                    est_att_f = drdid_rc
                 
                 att_gt, att_inf_func = est_att_f(y=Y, post=post, D = G, i_weights=w, covariates=covariates)
                 # print(att_inf_func)
-                att_inf_func = (n/n1)*att_inf_func
+                att_inf_func = (n_obs/n1)*att_inf_func
                 
                 inf_func_df = pd.DataFrame(
                 {
@@ -265,7 +267,7 @@ def compute_att_gt(dp, est_method = "dr", base_period = 'varying'):
                 }
                 ).fillna(0)
 
-                inf_zeros = np.zeros(n)
+                inf_zeros = np.zeros(n_obs)
                 aggte_infffuc = inf_func_df.groupby('right_ids').inf_func.sum()
                 try:
                     dis_idx1 = np.isin(data['rowid'].unique(), aggte_infffuc.index.to_numpy())

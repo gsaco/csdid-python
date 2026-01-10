@@ -1,0 +1,2 @@
+source,n_rows,n_units,treated_units,control_units,weight_min,weight_mean,weight_max
+truth_r,4400,2200,978,1222,1891,67996.82272727319,6221536
