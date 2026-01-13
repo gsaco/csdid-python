@@ -99,8 +99,9 @@ def compute_aggte(MP,
     if panel:
         dta = data[data[tname] == tlist[0]]
     else:
-        dta = data.groupby(idname).mean().reset_index()
-        dta = dta.iloc[:, 1:]
+        dta_cols = [idname, gname, "w1"]
+        dta = data.loc[:, dta_cols].groupby(idname, as_index=False).mean()
+        dta = dta.drop(columns=[idname], errors="ignore")
 
 # =============================================================================
 #  Treat data 2
